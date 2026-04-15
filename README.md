@@ -122,6 +122,39 @@ EOF
 | `/api/status` | GET | 当前状态 |
 | `/api/history` | GET | 切换历史 |
 
+## 开机启动（systemd）
+
+```bash
+# 安装服务（复制 service 文件并重载 systemd）
+sudo cp claude-provider-switcher.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable claude-provider-switcher   # 开机自启
+sudo systemctl start claude-provider-switcher    # 立即启动
+
+# 常用命令
+sudo systemctl status claude-provider-switcher   # 查看状态
+sudo systemctl restart claude-provider-switcher   # 重启
+sudo systemctl stop claude-provider-switcher      # 停止
+sudo systemctl disable claude-provider-switcher   # 禁用开机启动
+```
+
+默认监听 `0.0.0.0:5000`，支持局域网访问。
+
+### 卸载
+
+```bash
+# 停止并禁用服务
+sudo systemctl stop claude-provider-switcher
+sudo systemctl disable claude-provider-switcher
+
+# 删除 service 文件
+sudo rm /etc/systemd/system/claude-provider-switcher.service
+sudo systemctl daemon-reload
+
+# （可选）清理备份目录
+rm -rf ~/.claude/provider-backups/
+```
+
 ## License
 
 MIT
