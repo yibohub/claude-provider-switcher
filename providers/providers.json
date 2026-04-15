@@ -1,0 +1,12 @@
+{
+  "glm": {
+    "label": "智谱 AI (GLM)",
+    "color": "#4A90D9",
+    "icon": "G"
+  },
+  "m27": {
+    "label": "MiniMax (M2.7)",
+    "color": "#E67E22",
+    "icon": "M"
+  }
+}

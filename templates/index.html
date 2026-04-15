@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Code 供应商切换</title>
+<style>
+  :root {
+    --bg-primary: #1a1b2e;
+    --bg-secondary: #232438;
+    --bg-card: #2a2b3d;
+    --bg-hover: #33344d;
+    --text-primary: #e8e8f0;
+    --text-secondary: #9495b0;
+    --border: #3a3b52;
+    --success: #2ecc71;
+    --danger: #e74c3c;
+    --warning: #f39c12;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: 24px;
+  }
+
+  .container { max-width: 800px; margin: 0 auto; }
+
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  h1 .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--success); }
+
+  .subtitle { color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 28px; }
+
+  /* Section header with add button */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .section-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .btn-add {
+    background: var(--success);
+    color: #fff;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+
+  .btn-add:hover { opacity: 0.85; }
+
+  /* 供应商卡片 */
+  .provider-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 28px; }
+
+  .provider-card {
+    background: var(--bg-card);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .provider-card:hover { background: var(--bg-hover); transform: translateY(-1px); }
+  .provider-card.active { border-color: var(--success); }
+
+  .provider-card.active::after {
+    content: '当前';
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: var(--success);
+    color: #fff;
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+
+  /* 卡片操作按钮 */
+  .card-actions {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .provider-card:hover .card-actions { opacity: 1; }
+  .provider-card.active:hover .card-actions { right: 60px; }
+
+  .card-actions button {
+    width: 26px;
+    height: 26px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.2s;
+  }
+
+  .btn-card-edit { background: var(--warning); color: #333; }
+  .btn-card-delete { background: var(--danger); color: #fff; }
+
+  .provider-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.2rem;
+    color: #fff;
+    margin-bottom: 12px;
+  }
+
+  .provider-name { font-size: 1.1rem; font-weight: 600; margin-bottom: 6px; }
+  .provider-url { font-size: 0.8rem; color: var(--text-secondary); word-break: break-all; margin-bottom: 12px; }
+
+  .model-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .model-tag {
+    background: var(--bg-primary);
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+  }
+
+  .model-tag span { color: var(--text-primary); font-weight: 500; }
+
+  /* 配置信息 */
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 28px; }
+
+  .info-item {
+    background: var(--bg-card);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+
+  .info-label { font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 4px; }
+  .info-value { font-size: 0.95rem; font-weight: 500; word-break: break-all; }
+
+  /* 切换历史 */
+  .history-list { margin-bottom: 28px; }
+
+  .history-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: var(--bg-card);
+    border-radius: 8px;
+    margin-bottom: 6px;
+  }
+
+  .history-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .history-label { font-size: 0.85rem; flex: 1; }
+  .history-time { font-size: 0.78rem; color: var(--text-secondary); }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+  }
+
+  .modal-overlay.show { display: flex; }
+
+  .modal {
+    background: var(--bg-secondary);
+    border-radius: 16px;
+    padding: 28px;
+    width: 520px;
+    max-width: 95vw;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .modal-title {
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+  }
+
+  .form-group { margin-bottom: 14px; }
+
+  .form-row {
+    display: flex;
+    gap: 12px;
+  }
+
+  .form-row .form-group { flex: 1; }
+
+  .form-group label {
+    display: block;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+  }
+
+  .form-group input, .form-group select {
+    width: 100%;
+    padding: 8px 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    outline: none;
+  }
+
+  .form-group input:focus { border-color: var(--success); }
+
+  .form-group input:read-only {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .form-group input[type="color"] {
+    padding: 2px 4px;
+    height: 38px;
+    cursor: pointer;
+  }
+
+  .form-group input[type="text"].icon-input {
+    width: 60px;
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .form-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 18px 0;
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+  }
+
+  .btn {
+    padding: 8px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+
+  .btn:hover { opacity: 0.85; }
+  .btn-primary { background: var(--success); color: #fff; }
+  .btn-cancel { background: var(--bg-card); color: var(--text-secondary); }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    color: #fff;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.3s;
+    z-index: 300;
+    max-width: 400px;
+  }
+
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.success { background: var(--success); }
+  .toast.error { background: var(--danger); }
+  .toast.info { background: var(--warning); color: #333; }
+
+  .loading-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.4);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+  }
+
+  .loading-overlay.show { display: flex; }
+
+  .spinner {
+    width: 32px; height: 32px;
+    border: 3px solid var(--border);
+    border-top-color: var(--text-primary);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 600px) {
+    .provider-grid, .info-grid { grid-template-columns: 1fr; }
+    .form-row { flex-direction: column; }
+    body { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1><span class="dot" id="statusDot"></span>Claude Code 供应商切换</h1>
+  <p class="subtitle">切换模型供应商时，仅替换环境变量配置，其他设置保持不变</p>
+
+  <div class="section-header">
+    <div class="section-title">供应商</div>
+    <button class="btn-add" onclick="openAddModal()">+ 添加供应商</button>
+  </div>
+  <div class="provider-grid" id="providerGrid"></div>
+
+  <div class="section-title">当前配置</div>
+  <div class="info-grid" id="infoGrid"></div>
+
+  <div class="section-title">切换历史</div>
+  <div class="history-list" id="historyList"></div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">添加供应商</div>
+    <form id="providerForm" onsubmit="return false;">
+      <div class="form-row">
+        <div class="form-group">
+          <label>供应商 ID（英文标识）</label>
+          <input type="text" id="fName" placeholder="如 deepseek" pattern="[a-zA-Z0-9_-]+" required>
+        </div>
+        <div class="form-group">
+          <label>显示名称</label>
+          <input type="text" id="fLabel" placeholder="如 DeepSeek" required>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>颜色</label>
+          <input type="color" id="fColor" value="#4A90D9">
+        </div>
+        <div class="form-group">
+          <label>图标（单字符）</label>
+          <input type="text" id="fIcon" class="icon-input" maxlength="2" placeholder="D">
+        </div>
+      </div>
+
+      <hr class="form-divider">
+
+      <div class="form-group">
+        <label>Auth Token</label>
+        <input type="text" id="fAuthToken" placeholder="API 认证令牌">
+      </div>
+      <div class="form-group">
+        <label>Base URL</label>
+        <input type="text" id="fBaseUrl" placeholder="https://api.example.com/anthropic">
+      </div>
+      <div class="form-group">
+        <label>Haiku 模型</label>
+        <input type="text" id="fHaiku" placeholder="模型标识">
+      </div>
+      <div class="form-group">
+        <label>Opus 模型</label>
+        <input type="text" id="fOpus" placeholder="模型标识">
+      </div>
+      <div class="form-group">
+        <label>Sonnet 模型</label>
+        <input type="text" id="fSonnet" placeholder="模型标识">
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn btn-cancel" onclick="closeModal()">取消</button>
+        <button type="button" class="btn btn-primary" onclick="submitForm()">保存</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="loading-overlay" id="loading"><div class="spinner"></div></div>
+
+<script>
+const $ = id => document.getElementById(id);
+let currentId = '';
+let editingId = null; // null = adding, string = editing
+
+async function api(path, opts) {
+  const res = await fetch('/api/' + path, opts);
+  return res.json();
+}
+
+function showToast(msg, type = 'success', duration = 3000) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + type;
+  setTimeout(() => t.classList.add('show'), 10);
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+function setLoading(on) {
+  $('loading').classList.toggle('show', on);
+}
+
+function escapeHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// ---- Render ----
+
+function renderProviders(providers, currentId) {
+  $('providerGrid').innerHTML = providers.map(p => `
+    <div class="provider-card ${p.id === currentId ? 'active' : ''}" onclick="doSwitch('${escapeHtml(p.id)}')">
+      <div class="card-actions">
+        <button class="btn-card-edit" onclick="event.stopPropagation();openEditModal('${escapeHtml(p.id)}')" title="编辑">&#9998;</button>
+        <button class="btn-card-delete" onclick="event.stopPropagation();doDelete('${escapeHtml(p.id)}')" title="删除">&#10005;</button>
+      </div>
+      <div class="provider-icon" style="background:${escapeHtml(p.color)}">${escapeHtml(p.icon)}</div>
+      <div class="provider-name">${escapeHtml(p.label)}</div>
+      <div class="provider-url">${escapeHtml(p.base_url)}</div>
+      <div class="model-tags">
+        <div class="model-tag">H: <span>${escapeHtml(p.models.haiku)}</span></div>
+        <div class="model-tag">O: <span>${escapeHtml(p.models.opus)}</span></div>
+        <div class="model-tag">S: <span>${escapeHtml(p.models.sonnet)}</span></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderSettings(settings) {
+  $('infoGrid').innerHTML = `
+    <div class="info-item">
+      <div class="info-label">Base URL</div>
+      <div class="info-value">${escapeHtml(settings.base_url)}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">已启用插件</div>
+      <div class="info-value">${settings.plugins.enabled} / ${settings.plugins.total}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">语言</div>
+      <div class="info-value">${escapeHtml(settings.language)}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">权限模式</div>
+      <div class="info-value">${escapeHtml(settings.permission_mode)}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Haiku 模型</div>
+      <div class="info-value">${escapeHtml(settings.models.haiku)}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Opus 模型</div>
+      <div class="info-value">${escapeHtml(settings.models.opus)}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Sonnet 模型</div>
+      <div class="info-value">${escapeHtml(settings.models.sonnet)}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Hooks</div>
+      <div class="info-value">${settings.has_hooks ? '已配置' : '未配置'}</div>
+    </div>
+  `;
+}
+
+function renderHistory(history) {
+  if (!history.length) {
+    $('historyList').innerHTML = '<div class="info-item" style="color:var(--text-secondary)">暂无切换记录</div>';
+    return;
+  }
+  $('historyList').innerHTML = history.map(h => `
+    <div class="history-item">
+      <div class="history-dot" style="background:${escapeHtml(h.color)}"></div>
+      <div class="history-label">${escapeHtml(h.label)}</div>
+      <div class="history-time">${escapeHtml(h.timestamp)}</div>
+    </div>
+  `).join('');
+}
+
+// ---- Switch ----
+
+async function doSwitch(name) {
+  if (name === currentId) {
+    showToast('当前已是该供应商', 'info');
+    return;
+  }
+  setLoading(true);
+  try {
+    const res = await api(`switch/${name}`, { method: 'POST' });
+    showToast(res.message, res.success ? 'success' : 'error');
+    if (res.success) await refresh();
+  } catch (e) {
+    showToast('切换失败: ' + e.message, 'error');
+  } finally {
+    setLoading(false);
+  }
+}
+
+// ---- Modal ----
+
+function openAddModal() {
+  editingId = null;
+  $('modalTitle').textContent = '添加供应商';
+  $('fName').value = '';
+  $('fName').readOnly = false;
+  $('fLabel').value = '';
+  $('fColor').value = '#4A90D9';
+  $('fIcon').value = '';
+  $('fAuthToken').value = '';
+  $('fBaseUrl').value = '';
+  $('fHaiku').value = '';
+  $('fOpus').value = '';
+  $('fSonnet').value = '';
+  $('modalOverlay').classList.add('show');
+  $('fName').focus();
+}
+
+async function openEditModal(name) {
+  setLoading(true);
+  try {
+    const res = await api(`providers/${name}`);
+    if (!res.success) {
+      showToast(res.message, 'error');
+      return;
+    }
+    const p = res.provider;
+    editingId = name;
+    $('modalTitle').textContent = '编辑供应商';
+    $('fName').value = p.id;
+    $('fName').readOnly = true;
+    $('fLabel').value = p.label;
+    $('fColor').value = p.color;
+    $('fIcon').value = p.icon;
+    $('fAuthToken').value = p.env.ANTHROPIC_AUTH_TOKEN || '';
+    $('fBaseUrl').value = p.env.ANTHROPIC_BASE_URL || '';
+    $('fHaiku').value = p.env.ANTHROPIC_DEFAULT_HAIKU_MODEL || '';
+    $('fOpus').value = p.env.ANTHROPIC_DEFAULT_OPUS_MODEL || '';
+    $('fSonnet').value = p.env.ANTHROPIC_DEFAULT_SONNET_MODEL || '';
+    $('modalOverlay').classList.add('show');
+  } catch (e) {
+    showToast('加载供应商信息失败: ' + e.message, 'error');
+  } finally {
+    setLoading(false);
+  }
+}
+
+function closeModal() {
+  $('modalOverlay').classList.remove('show');
+  editingId = null;
+}
+
+async function submitForm() {
+  const name = $('fName').value.trim();
+  const label = $('fLabel').value.trim();
+  const color = $('fColor').value;
+  const icon = $('fIcon').value.trim();
+  const env = {
+    ANTHROPIC_AUTH_TOKEN: $('fAuthToken').value.trim(),
+    ANTHROPIC_BASE_URL: $('fBaseUrl').value.trim(),
+    ANTHROPIC_DEFAULT_HAIKU_MODEL: $('fHaiku').value.trim(),
+    ANTHROPIC_DEFAULT_OPUS_MODEL: $('fOpus').value.trim(),
+    ANTHROPIC_DEFAULT_SONNET_MODEL: $('fSonnet').value.trim(),
+  };
+
+  if (!name || !label) {
+    showToast('供应商 ID 和显示名称不能为空', 'error');
+    return;
+  }
+
+  setLoading(true);
+  try {
+    let res;
+    if (editingId) {
+      res = await api(`providers/${editingId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ label, color, icon, env }),
+      });
+    } else {
+      res = await api('providers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, label, color, icon, env }),
+      });
+    }
+
+    showToast(res.message, res.success ? 'success' : 'error');
+    if (res.success) {
+      closeModal();
+      await refresh();
+    }
+  } catch (e) {
+    showToast('操作失败: ' + e.message, 'error');
+  } finally {
+    setLoading(false);
+  }
+}
+
+// ---- Delete ----
+
+async function doDelete(name) {
+  if (!confirm('确定要删除此供应商吗？')) return;
+  setLoading(true);
+  try {
+    const res = await api(`providers/${name}`, { method: 'DELETE' });
+    showToast(res.message, res.success ? 'success' : 'error');
+    if (res.success) await refresh();
+  } catch (e) {
+    showToast('删除失败: ' + e.message, 'error');
+  } finally {
+    setLoading(false);
+  }
+}
+
+// ---- Refresh ----
+
+async function refresh() {
+  try {
+    const [providersRes, statusRes, historyRes] = await Promise.all([
+      api('providers'),
+      api('status'),
+      api('history'),
+    ]);
+    currentId = providersRes.current_id;
+    $('statusDot').style.background = statusRes.current.color;
+    renderProviders(providersRes.providers, currentId);
+    renderSettings(statusRes.settings);
+    renderHistory(historyRes.history);
+  } catch (e) {
+    showToast('加载失败: ' + e.message, 'error');
+  }
+}
+
+// ESC to close modal
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+});
+
+refresh();
+</script>
+</body>
+</html>
