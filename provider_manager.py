@@ -23,8 +23,16 @@ SWITCHABLE_ENV_KEYS = [
 
 # 内置默认元数据（首次运行迁移用）
 _BUILTIN_META = {
-    "glm": {"label": "智谱 AI (GLM)", "color": "#4A90D9", "icon": "G"},
-    "m27": {"label": "MiniMax (M2.7)", "color": "#E67E22", "icon": "M"},
+    "glm": {
+        "label": "GLM", "color": "#4285f4", "icon": "🧠",
+        "priority": 1, "auth_type": "x-api-key",
+        "health_check_path": "/v1/models", "health_check_fallback": True,
+    },
+    "m27": {
+        "label": "MiniMax", "color": "#E67E22", "icon": "M",
+        "priority": 2, "auth_type": "x-api-key",
+        "health_check_path": "/v1/models", "health_check_fallback": True,
+    },
 }
 
 
@@ -210,7 +218,11 @@ def switch_provider(name: str) -> dict:
     return {"success": True, "message": f"已切换到 {meta[name]['label']}", "backup": backup_path}
 
 
-def add_provider(name: str, label: str, color: str, icon: str, env_vars: dict) -> dict:
+def add_provider(
+    name: str, label: str, color: str, icon: str, env_vars: dict,
+    priority: int = 99, auth_type: str = "x-api-key",
+    health_check_path: str = "/v1/models", health_check_fallback: bool = True,
+) -> dict:
     if not name:
         return {"success": False, "message": "供应商 ID 不能为空"}
     if not _valid_provider_id(name):
@@ -222,22 +234,36 @@ def add_provider(name: str, label: str, color: str, icon: str, env_vars: dict) -
     if name in meta:
         return {"success": False, "message": f"供应商 '{name}' 已存在"}
 
-    meta[name] = {"label": label, "color": color, "icon": icon or name[0].upper()}
+    meta[name] = {
+        "label": label, "color": color,
+        "icon": icon or name[0].upper(),
+        "priority": priority, "auth_type": auth_type,
+        "health_check_path": health_check_path,
+        "health_check_fallback": health_check_fallback,
+    }
     _save_meta(meta)
     _save_env_file(PROVIDERS_DIR / f"{name}.env", env_vars)
-
     return {"success": True, "message": f"已添加供应商: {label}"}
 
 
-def update_provider(name: str, label: str, color: str, icon: str, env_vars: dict) -> dict:
+def update_provider(
+    name: str, label: str, color: str, icon: str, env_vars: dict,
+    priority: int = 99, auth_type: str = "x-api-key",
+    health_check_path: str = "/v1/models", health_check_fallback: bool = True,
+) -> dict:
     meta = _load_meta()
     if name not in meta:
         return {"success": False, "message": f"供应商 '{name}' 不存在"}
 
-    meta[name] = {"label": label, "color": color, "icon": icon or name[0].upper()}
+    meta[name] = {
+        "label": label, "color": color,
+        "icon": icon or name[0].upper(),
+        "priority": priority, "auth_type": auth_type,
+        "health_check_path": health_check_path,
+        "health_check_fallback": health_check_fallback,
+    }
     _save_meta(meta)
     _save_env_file(PROVIDERS_DIR / f"{name}.env", env_vars)
-
     return {"success": True, "message": f"已更新供应商: {label}"}
 
 

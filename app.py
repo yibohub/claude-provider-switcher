@@ -54,6 +54,10 @@ def api_add_provider():
         color=data.get("color", "#888"),
         icon=data.get("icon", ""),
         env_vars={k: str(v).strip() for k, v in data.get("env", {}).items()},
+        priority=int(data.get("priority", 99)),
+        auth_type=data.get("auth_type", "x-api-key"),
+        health_check_path=data.get("health_check_path", "/v1/models"),
+        health_check_fallback=bool(data.get("health_check_fallback", True)),
     )
     status_code = 201 if result["success"] else 400
     return jsonify(result), status_code
@@ -68,6 +72,10 @@ def api_update_provider(name):
         color=data.get("color", "#888"),
         icon=data.get("icon", ""),
         env_vars={k: str(v).strip() for k, v in data.get("env", {}).items()},
+        priority=int(data.get("priority", 99)),
+        auth_type=data.get("auth_type", "x-api-key"),
+        health_check_path=data.get("health_check_path", "/v1/models"),
+        health_check_fallback=bool(data.get("health_check_fallback", True)),
     )
     status_code = 200 if result["success"] else 400
     return jsonify(result), status_code

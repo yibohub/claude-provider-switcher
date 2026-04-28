@@ -1,12 +1,20 @@
 {
   "glm": {
-    "label": "智谱 AI (GLM)",
-    "color": "#4A90D9",
-    "icon": "G"
+    "label": "GLM",
+    "color": "#4285f4",
+    "icon": "🧠",
+    "priority": 1,
+    "auth_type": "x-api-key",
+    "health_check_path": "/v1/models",
+    "health_check_fallback": true
   },
   "m27": {
-    "label": "MiniMax (M2.7)",
+    "label": "MiniMax",
     "color": "#E67E22",
-    "icon": "M"
+    "icon": "M",
+    "priority": 2,
+    "auth_type": "x-api-key",
+    "health_check_path": "/v1/models",
+    "health_check_fallback": true
   }
 }
