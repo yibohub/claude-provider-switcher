@@ -527,6 +527,18 @@ def _record_success(name: str):
     state["last_failure_time"] = None
 
 
+def _log_failover(from_provider: str, to_provider: str, reason: str, status_code: int | None, latency_ms: int | None):
+    with _lock:
+        _failover_log.append({
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "from_provider": from_provider,
+            "to_provider": to_provider,
+            "reason": reason,
+            "status_code": status_code,
+            "latency_ms": latency_ms,
+        })
+
+
 def _get_sorted_providers() -> list[tuple[str, dict]]:
     meta = _load_meta()
     providers = []
@@ -573,7 +585,7 @@ def proxy_handler(path):
     if not available:
         return jsonify({"error": "所有供应商均不可用（熔断或未配置）"}), 503
 
-    last_error = ""
+    prev_provider = None
     for name, meta_entry in available:
         env = _load_provider_env(name)
         base_url = env.get("ANTHROPIC_BASE_URL", "").rstrip("/")
@@ -582,7 +594,7 @@ def proxy_handler(path):
         target_url = f"{base_url}/{path}"
         headers = _get_auth_headers(token, auth_type)
 
-        # 透传 Content-Type 和其他必要 headers
+        # 透传 Content-Type 和其他必要 headers（不透传原始 auth header）
         for h in ["Content-Type", "Accept", "X-Request-Id"]:
             if request.headers.get(h):
                 headers[h] = request.headers[h]
@@ -595,10 +607,14 @@ def proxy_handler(path):
                     if resp.status_code in (429, 500, 502, 503):
                         _record_failure(name, resp.status_code)
                         resp.read()
-                        last_error = f"{name}: HTTP {resp.status_code}"
+                        if prev_provider is not None:
+                            _log_failover(prev_provider, name, f"HTTP {resp.status_code}", resp.status_code, None)
+                        prev_provider = name
                         continue
 
                     _record_success(name)
+                    if prev_provider is not None:
+                        _log_failover(prev_provider, name, "recovery", None, None)
 
                     def generate():
                         for chunk in resp.iter_bytes():
@@ -610,18 +626,26 @@ def proxy_handler(path):
 
         except httpx.TimeoutException:
             _record_failure(name, None)
-            last_error = f"{name}: 超时"
+            if prev_provider is not None:
+                _log_failover(prev_provider, name, "超时", None, None)
+            prev_provider = name
             continue
-        except httpx.ConnectError as e:
+        except httpx.ConnectError:
             _record_failure(name, None)
-            last_error = f"{name}: 连接失败"
+            if prev_provider is not None:
+                _log_failover(prev_provider, name, "连接失败", None, None)
+            prev_provider = name
             continue
         except Exception as e:
             _record_failure(name, None)
-            last_error = f"{name}: {e}"
+            print(f"[proxy] {name} 转发异常: {e}")
+            if prev_provider is not None:
+                _log_failover(prev_provider, name, str(e), None, None)
+            prev_provider = name
             continue
 
-    return jsonify({"error": "所有供应商请求均失败", "last_error": last_error}), 503
+    print(f"[proxy] 所有供应商请求均失败, providers={available}")
+    return jsonify({"error": "所有供应商请求均失败"}), 503
 
 
 @proxy_bp.route("/api/proxy/status")
@@ -1106,6 +1130,51 @@ git commit -m "feat: wire up health and proxy blueprints with APScheduler"
 @media (max-width: 600px) {
   .health-grid { grid-template-columns: 1fr; }
 }
+
+/* 延迟趋势图 */
+.latency-chart {
+  background: var(--bg-card);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 24px;
+  min-height: 160px;
+}
+
+.latency-chart-svg {
+  width: 100%;
+  height: 140px;
+}
+
+.latency-chart-svg .bar { rx: 2; }
+
+.latency-chart-svg .axis-line { stroke: var(--border); stroke-width: 0.5; }
+
+.latency-chart-svg .label-text {
+  fill: var(--text-secondary);
+  font-size: 10px;
+  font-family: sans-serif;
+}
+
+.latency-chart-legend {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+  justify-content: center;
+}
+
+.latency-chart-legend span {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.latency-chart-legend .legend-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  margin-right: 4px;
+  vertical-align: middle;
+}
 ```
 
 - [ ] **Step 2: 修改 HTML body — 添加 Tab 导航，将现有内容包裹进第一个 Tab**
@@ -1175,6 +1244,8 @@ git commit -m "feat: wire up health and proxy blueprints with APScheduler"
       <button class="btn-check" onclick="checkAllHealth()">全部检测</button>
     </div>
     <div class="health-grid" id="healthGrid"></div>
+    <div class="section-title">24h 延迟趋势</div>
+    <div class="latency-chart" id="latencyChart"></div>
   </div>
 </div>
 ```
@@ -1287,6 +1358,7 @@ async function loadHealthPanel() {
     const res = await fetch('/api/health');
     healthStatus = await res.json();
     renderHealthCards();
+    loadLatencyChart();
     if (!healthPollTimer) {
       healthPollTimer = setInterval(loadHealthPanel, 60000);
     }
@@ -1329,10 +1401,101 @@ async function checkSingleHealth(name) {
 
 async function checkAllHealth() {
   try {
-    await fetch('/api/health/check/all', { method: 'POST' }).catch(() => {});
+    const names = Object.keys(healthStatus);
+    await Promise.all(names.map(n => fetch(`/api/health/check/${n}`, { method: 'POST' }).catch(() => {})));
     await loadHealthPanel();
   } catch (e) {
     showToast('检测失败: ' + e.message, 'error');
+  }
+}
+
+// ---- 延迟趋势图 ----
+
+async function loadLatencyChart() {
+  try {
+    const res = await fetch('/api/health/history');
+    const data = await res.json();
+    const history = data.history || [];
+    if (!history.length) {
+      $('latencyChart').innerHTML = '<div style="color:var(--text-secondary);text-align:center;padding:40px 0">暂无检测数据</div>';
+      return;
+    }
+
+    const providersRes = providersRes_cache;
+    const meta = {};
+    (providersRes?.providers || []).forEach(p => { meta[p.id] = p; });
+
+    // 按供应商分组，取最近 48 条记录
+    const byProvider = {};
+    history.forEach(h => {
+      if (h.latency_ms == null) return;
+      byProvider[h.provider] = byProvider[h.provider] || [];
+      byProvider[h.provider].push(h);
+    });
+
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(svgNS, 'svg');
+    svg.setAttribute('class', 'latency-chart-svg');
+    svg.setAttribute('viewBox', '0 0 800 140');
+    svg.setAttribute('preserveAspectRatio', 'none');
+
+    // 网格线
+    [0, 1, 2].forEach(i => {
+      const y = 10 + i * 42;
+      const line = document.createElementNS(svgNS, 'line');
+      line.setAttribute('class', 'axis-line');
+      line.setAttribute('x1', '0'); line.setAttribute('y1', String(y));
+      line.setAttribute('x2', '800'); line.setAttribute('y2', String(y));
+      svg.appendChild(line);
+    });
+
+    // 标签
+    const labels = ['0ms', '1000ms', '2000ms'];
+    labels.forEach((txt, i) => {
+      const text = document.createElementNS(svgNS, 'text');
+      text.setAttribute('class', 'label-text');
+      text.setAttribute('x', '2'); text.setAttribute('y', String(8 + i * 42));
+      text.textContent = txt;
+      svg.appendChild(text);
+    });
+
+    // 按供应商绘制柱状图
+    const providerNames = Object.keys(byProvider);
+    const groupWidth = Math.max(4, Math.min(12, 700 / providerNames.length));
+    const maxPoints = Math.floor(700 / (groupWidth * providerNames.length));
+
+    providerNames.forEach((name, pi) => {
+      const entries = byProvider[name].slice(-maxPoints);
+      const color = meta[name]?.color || '#888';
+      entries.forEach((entry, ei) => {
+        const x = 50 + ei * (groupWidth * providerNames.length) + pi * groupWidth;
+        const barHeight = Math.min(120, Math.max(2, (entry.latency_ms / 3000) * 120));
+        const barY = 130 - barHeight;
+        const rect = document.createElementNS(svgNS, 'rect');
+        rect.setAttribute('class', 'bar');
+        rect.setAttribute('x', String(x)); rect.setAttribute('y', String(barY));
+        rect.setAttribute('width', String(groupWidth - 1)); rect.setAttribute('height', String(barHeight));
+        rect.setAttribute('fill', color);
+        rect.setAttribute('opacity', '0.7');
+        rect.setAttribute('title', `${name}: ${entry.latency_ms}ms (${entry.timestamp})`);
+        svg.appendChild(rect);
+      });
+    });
+
+    $('latencyChart').innerHTML = '';
+    $('latencyChart').appendChild(svg);
+
+    // 图例
+    const legend = document.createElement('div');
+    legend.className = 'latency-chart-legend';
+    providerNames.forEach(name => {
+      const color = meta[name]?.color || '#888';
+      const label = meta[name]?.label || name;
+      legend.innerHTML += `<span><span class="legend-dot" style="background:${color}"></span>${escapeHtml(label)}</span>`;
+    });
+    $('latencyChart').appendChild(legend);
+  } catch (e) {
+    $('latencyChart').innerHTML = '<div style="color:var(--text-secondary)">加载延迟趋势失败</div>';
   }
 }
 ```
