@@ -198,13 +198,13 @@ def proxy_handler(path):
                     if prev_provider is not None:
                         _log_failover(prev_provider, name, "recovery", None, None)
 
-                    def generate():
-                        for chunk in resp.iter_bytes():
-                            yield chunk
-
+                    # 读取响应 headers 和内容，在 with 块内完成流式读取
                     excluded = {"transfer-encoding", "content-encoding", "connection"}
                     resp_headers = [(k, v) for k, v in resp.headers.items() if k.lower() not in excluded]
-                    return Response(generate(), status=resp.status_code, headers=resp_headers)
+                    status_code = resp.status_code
+                    chunks = list(resp.iter_bytes())
+
+            return Response(iter(chunks), status=status_code, headers=resp_headers)
 
         except httpx.TimeoutException:
             _record_failure(name, None)
