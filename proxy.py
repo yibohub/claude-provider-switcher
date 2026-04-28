@@ -258,8 +258,11 @@ def api_proxy_toggle():
     return jsonify({"success": True, "enabled": _proxy_enabled, "message": f"代理已{'启用' if _proxy_enabled else '禁用'}"})
 
 
-@proxy_bp.route("/api/proxy/config", methods=["PUT"])
+@proxy_bp.route("/api/proxy/config", methods=["GET", "PUT"])
 def api_proxy_config():
+    if request.method == "GET":
+        return jsonify(_load_proxy_config())
+
     data = request.get_json() or {}
     cfg = _load_proxy_config()
     for key in ("timeout", "max_providers", "circuit_threshold"):
