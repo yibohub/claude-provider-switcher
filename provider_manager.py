@@ -148,6 +148,7 @@ def get_all_providers() -> dict:
         entry = _provider_summary(name, m)
         entry["base_url"] = env.get("ANTHROPIC_BASE_URL", "")
         entry["models"] = _extract_models(env)
+        entry["priority"] = m.get("priority", 99)
         providers.append(entry)
     return {"providers": providers, "current_id": current_id}
 
@@ -174,6 +175,10 @@ def get_provider_detail(name: str) -> dict | None:
     env = _load_provider_env(name)
     result = _provider_summary(name, meta[name])
     result["env"] = {k: env.get(k, "") for k in SWITCHABLE_ENV_KEYS}
+    result["priority"] = meta[name].get("priority", 99)
+    result["auth_type"] = meta[name].get("auth_type", "x-api-key")
+    result["health_check_path"] = meta[name].get("health_check_path", "/v1/models")
+    result["health_check_fallback"] = meta[name].get("health_check_fallback", True)
     return result
 
 

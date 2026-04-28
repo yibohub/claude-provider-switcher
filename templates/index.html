@@ -337,24 +337,185 @@
     .form-row { flex-direction: column; }
     body { padding: 16px; }
   }
+
+/* Tab 导航 */
+.tab-nav {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 0;
+}
+.tab-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 10px 20px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.2s;
+}
+.tab-btn:hover { color: var(--text-primary); }
+.tab-btn.active { color: var(--text-primary); border-bottom-color: var(--success); }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* 健康状态灯 */
+.health-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+.health-dot.healthy { background: var(--success); }
+.health-dot.degraded { background: var(--warning); }
+.health-dot.unhealthy { background: var(--danger); }
+.health-dot.unknown { background: var(--border); }
+
+/* 代理面板 */
+.proxy-panel { margin-bottom: 24px; }
+.proxy-toggle { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.toggle-switch {
+  position: relative; width: 48px; height: 26px; background: var(--border);
+  border-radius: 13px; cursor: pointer; transition: background 0.3s;
+}
+.toggle-switch.on { background: var(--success); }
+.toggle-switch::after {
+  content: ''; position: absolute; width: 22px; height: 22px; background: #fff;
+  border-radius: 50%; top: 2px; left: 2px; transition: transform 0.3s;
+}
+.toggle-switch.on::after { transform: translateX(22px); }
+.proxy-info { background: var(--bg-card); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+.proxy-tip {
+  background: rgba(46, 204, 113, 0.1); border: 1px solid var(--success);
+  border-radius: 10px; padding: 12px 16px; margin-bottom: 16px;
+  font-size: 0.85rem; color: var(--success); display: none;
+}
+.proxy-tip.show { display: block; }
+.proxy-tip code { background: var(--bg-card); padding: 2px 6px; border-radius: 4px; font-family: monospace; }
+
+/* 故障转移日志 */
+.log-list { max-height: 300px; overflow-y: auto; }
+.log-item {
+  display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+  background: var(--bg-card); border-radius: 6px; margin-bottom: 4px; font-size: 0.82rem;
+}
+.log-time { color: var(--text-secondary); flex-shrink: 0; }
+.log-arrow { color: var(--warning); }
+.log-reason { color: var(--danger); margin-left: auto; }
+
+/* 健康监控卡片 */
+.health-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+.health-card { background: var(--bg-card); border-radius: 10px; padding: 16px; }
+.health-card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.health-card-name { font-weight: 600; font-size: 0.95rem; }
+.health-card-latency { font-size: 0.82rem; color: var(--text-secondary); }
+.health-models { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
+.health-model-tag { background: var(--bg-primary); padding: 2px 8px; border-radius: 4px; font-size: 0.72rem; color: var(--text-secondary); }
+.btn-check {
+  background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border);
+  padding: 6px 14px; border-radius: 8px; font-size: 0.82rem; cursor: pointer; transition: opacity 0.2s;
+}
+.btn-check:hover { opacity: 0.85; }
+
+/* 代理配置 */
+.config-panel { background: var(--bg-card); border-radius: 10px; padding: 16px; }
+.config-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.config-row label { font-size: 0.82rem; color: var(--text-secondary); min-width: 120px; }
+.config-row input {
+  width: 80px; padding: 6px 10px; background: var(--bg-primary);
+  border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); font-size: 0.85rem; outline: none;
+}
+.config-row input:focus { border-color: var(--success); }
+.btn-save-config { background: var(--success); color: #fff; border: none; padding: 6px 16px; border-radius: 8px; font-size: 0.85rem; cursor: pointer; }
+
+/* 供应商卡片上的优先级和健康灯 */
+.provider-priority {
+  position: absolute; top: 12px; left: 12px; background: var(--bg-primary);
+  color: var(--text-secondary); font-size: 0.7rem; padding: 1px 6px; border-radius: 8px;
+}
+.provider-health-dot { position: absolute; top: 12px; right: 12px; }
+.provider-card.active .provider-health-dot { right: 60px; }
+
+/* 延迟趋势图 */
+.latency-chart { background: var(--bg-card); border-radius: 10px; padding: 16px; margin-bottom: 24px; min-height: 160px; }
+.latency-chart-svg { width: 100%; height: 140px; }
+.latency-chart-svg .bar { rx: 2; }
+.latency-chart-svg .axis-line { stroke: var(--border); stroke-width: 0.5; }
+.latency-chart-svg .label-text { fill: var(--text-secondary); font-size: 10px; font-family: sans-serif; }
+.latency-chart-legend { display: flex; gap: 16px; margin-top: 8px; justify-content: center; }
+.latency-chart-legend span { font-size: 0.78rem; color: var(--text-secondary); }
+.latency-chart-legend .legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
+
+@media (max-width: 600px) {
+  .health-grid { grid-template-columns: 1fr; }
+}
 </style>
 </head>
 <body>
 <div class="container">
-  <h1><span class="dot" id="statusDot"></span>Claude Code 供应商切换</h1>
-  <p class="subtitle">切换模型供应商时，仅替换环境变量配置，其他设置保持不变</p>
+  <h1><span class="dot" id="statusDot"></span>CC Switch Lite</h1>
+  <p class="subtitle">Claude Code 供应商管理、代理转发与健康监控</p>
 
-  <div class="section-header">
-    <div class="section-title">供应商</div>
-    <button class="btn-add" onclick="openAddModal()">+ 添加供应商</button>
+  <nav class="tab-nav">
+    <button class="tab-btn active" onclick="switchTab('providers')">供应商管理</button>
+    <button class="tab-btn" onclick="switchTab('proxy')">代理服务</button>
+    <button class="tab-btn" onclick="switchTab('health')">健康监控</button>
+  </nav>
+
+  <div id="tab-providers" class="tab-panel active">
+    <div class="section-header">
+      <div class="section-title">供应商</div>
+      <button class="btn-add" onclick="openAddModal()">+ 添加供应商</button>
+    </div>
+    <div class="provider-grid" id="providerGrid"></div>
+    <div class="section-title">当前配置</div>
+    <div class="info-grid" id="infoGrid"></div>
+    <div class="section-title">切换历史</div>
+    <div class="history-list" id="historyList"></div>
   </div>
-  <div class="provider-grid" id="providerGrid"></div>
 
-  <div class="section-title">当前配置</div>
-  <div class="info-grid" id="infoGrid"></div>
+  <div id="tab-proxy" class="tab-panel">
+    <div class="proxy-panel">
+      <div class="proxy-toggle">
+        <div class="toggle-switch" id="proxyToggle" onclick="toggleProxy()"></div>
+        <span id="proxyStatusLabel">代理服务已关闭</span>
+      </div>
+      <div class="proxy-tip" id="proxyTip">
+        请将 Claude Code 的 <code>ANTHROPIC_BASE_URL</code> 设为 <code>http://localhost:5000/proxy</code>
+      </div>
+      <div class="proxy-info" id="proxyInfo"></div>
+      <div class="section-title">故障转移日志</div>
+      <div class="log-list" id="failoverLog"></div>
+    </div>
+    <div class="section-title">代理配置</div>
+    <div class="config-panel">
+      <div class="config-row">
+        <label>请求超时（秒）</label>
+        <input type="number" id="cfgTimeout" value="30" min="5" max="120">
+      </div>
+      <div class="config-row">
+        <label>最大尝试供应商</label>
+        <input type="number" id="cfgMaxProviders" value="3" min="1" max="10">
+      </div>
+      <div class="config-row">
+        <label>熔断阈值（次）</label>
+        <input type="number" id="cfgCircuit" value="3" min="1" max="10">
+      </div>
+      <div class="config-row">
+        <label></label>
+        <button class="btn-save-config" onclick="saveProxyConfig()">保存配置</button>
+      </div>
+    </div>
+  </div>
 
-  <div class="section-title">切换历史</div>
-  <div class="history-list" id="historyList"></div>
+  <div id="tab-health" class="tab-panel">
+    <div class="section-header">
+      <div class="section-title">供应商健康状态</div>
+      <button class="btn-check" onclick="checkAllHealth()">全部检测</button>
+    </div>
+    <div class="health-grid" id="healthGrid"></div>
+    <div class="section-title">24h 延迟趋势</div>
+    <div class="latency-chart" id="latencyChart"></div>
+  </div>
 </div>
 
 <!-- Modal -->
@@ -380,6 +541,19 @@
         <div class="form-group">
           <label>图标（单字符）</label>
           <input type="text" id="fIcon" class="icon-input" maxlength="2" placeholder="D">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>代理优先级（数字越小越优先）</label>
+          <input type="number" id="fPriority" value="99" min="0" max="99">
+        </div>
+        <div class="form-group">
+          <label>认证方式</label>
+          <select id="fAuthType">
+            <option value="x-api-key">x-api-key（Anthropic 兼容）</option>
+            <option value="bearer">Bearer Token（OpenAI 兼容）</option>
+          </select>
         </div>
       </div>
 
@@ -421,6 +595,7 @@
 const $ = id => document.getElementById(id);
 let currentId = '';
 let editingId = null; // null = adding, string = editing
+let providersRes_cache = null;
 
 async function api(path, opts) {
   const res = await fetch('/api/' + path, opts);
@@ -448,8 +623,13 @@ function escapeHtml(s) {
 // ---- Render ----
 
 function renderProviders(providers, currentId) {
-  $('providerGrid').innerHTML = providers.map(p => `
+  $('providerGrid').innerHTML = providers.map(p => {
+    const h = healthStatus[p.id];
+    const healthClass = h ? h.status : 'unknown';
+    return `
     <div class="provider-card ${p.id === currentId ? 'active' : ''}" onclick="doSwitch('${escapeHtml(p.id)}')">
+      <span class="provider-priority">P${escapeHtml(String(p.priority || 99))}</span>
+      <span class="provider-health-dot health-dot ${healthClass}"></span>
       <div class="card-actions">
         <button class="btn-card-edit" onclick="event.stopPropagation();openEditModal('${escapeHtml(p.id)}')" title="编辑">&#9998;</button>
         <button class="btn-card-delete" onclick="event.stopPropagation();doDelete('${escapeHtml(p.id)}')" title="删除">&#10005;</button>
@@ -462,8 +642,8 @@ function renderProviders(providers, currentId) {
         <div class="model-tag">O: <span>${escapeHtml(p.models.opus)}</span></div>
         <div class="model-tag">S: <span>${escapeHtml(p.models.sonnet)}</span></div>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 function renderSettings(settings) {
@@ -546,6 +726,8 @@ function openAddModal() {
   $('fLabel').value = '';
   $('fColor').value = '#4A90D9';
   $('fIcon').value = '';
+  $('fPriority').value = '99';
+  $('fAuthType').value = 'x-api-key';
   $('fAuthToken').value = '';
   $('fBaseUrl').value = '';
   $('fHaiku').value = '';
@@ -576,6 +758,8 @@ async function openEditModal(name) {
     $('fHaiku').value = p.env.ANTHROPIC_DEFAULT_HAIKU_MODEL || '';
     $('fOpus').value = p.env.ANTHROPIC_DEFAULT_OPUS_MODEL || '';
     $('fSonnet').value = p.env.ANTHROPIC_DEFAULT_SONNET_MODEL || '';
+    $('fPriority').value = p.priority || 99;
+    $('fAuthType').value = p.auth_type || 'x-api-key';
     $('modalOverlay').classList.add('show');
   } catch (e) {
     showToast('加载供应商信息失败: ' + e.message, 'error');
@@ -601,6 +785,8 @@ async function submitForm() {
     ANTHROPIC_DEFAULT_OPUS_MODEL: $('fOpus').value.trim(),
     ANTHROPIC_DEFAULT_SONNET_MODEL: $('fSonnet').value.trim(),
   };
+  const priority = parseInt($('fPriority').value) || 99;
+  const auth_type = $('fAuthType').value;
 
   if (!name || !label) {
     showToast('供应商 ID 和显示名称不能为空', 'error');
@@ -614,13 +800,13 @@ async function submitForm() {
       res = await api(`providers/${editingId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ label, color, icon, env }),
+        body: JSON.stringify({ label, color, icon, env, priority, auth_type }),
       });
     } else {
       res = await api('providers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, label, color, icon, env }),
+        body: JSON.stringify({ name, label, color, icon, env, priority, auth_type }),
       });
     }
 
@@ -661,14 +847,207 @@ async function refresh() {
       api('status'),
       api('history'),
     ]);
+    providersRes_cache = providersRes;
     currentId = providersRes.current_id;
     $('statusDot').style.background = statusRes.current.color;
     renderProviders(providersRes.providers, currentId);
     renderSettings(statusRes.settings);
     renderHistory(historyRes.history);
+    fetch('/api/health').then(r => r.json()).then(d => {
+      healthStatus = d;
+      renderProviders(providersRes.providers, currentId);
+    }).catch(() => {});
   } catch (e) {
     showToast('加载失败: ' + e.message, 'error');
   }
+}
+
+// ---- Tab ----
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach((b, i) => {
+    b.classList.toggle('active', ['providers','proxy','health'][i] === name);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  $('tab-' + name).classList.add('active');
+  if (name === 'proxy') loadProxyPanel();
+  if (name === 'health') loadHealthPanel();
+}
+
+// ---- Proxy ----
+let proxyStatus = null;
+
+async function loadProxyPanel() {
+  try {
+    const res = await api('proxy/status');
+    proxyStatus = res;
+    $('proxyToggle').classList.toggle('on', res.enabled);
+    $('proxyStatusLabel').textContent = res.enabled ? '代理服务已启用' : '代理服务已关闭';
+    $('proxyTip').classList.toggle('show', res.enabled);
+    const current = res.current_provider || {};
+    $('proxyInfo').innerHTML = `
+      <div class="info-label">当前活跃供应商</div>
+      <div class="info-value" style="color:${current.color || '#fff'}">${escapeHtml(current.label || '无')}</div>
+      <div style="margin-top:8px">
+        ${Object.entries(res.circuit_state || {}).map(([n, s]) =>
+          `<span class="health-dot ${s.status}"></span> ${escapeHtml(n)}`
+        ).join('&nbsp;&nbsp;')}
+      </div>
+    `;
+    $('failoverLog').innerHTML = (res.failover_log || []).length
+      ? res.failover_log.map(l => `
+        <div class="log-item">
+          <span class="log-time">${escapeHtml(l.timestamp || '')}</span>
+          <span>${escapeHtml(l.from_provider || '')}</span>
+          <span class="log-arrow">&rarr;</span>
+          <span>${escapeHtml(l.to_provider || '')}</span>
+          <span class="log-reason">${escapeHtml(l.reason || '')}</span>
+        </div>
+      `).join('')
+      : '<div class="info-item" style="color:var(--text-secondary)">暂无故障转移记录</div>';
+    const cfg = await (await fetch('/api/proxy/config')).json();
+    $('cfgTimeout').value = cfg.timeout || 30;
+    $('cfgMaxProviders').value = cfg.max_providers || 3;
+    $('cfgCircuit').value = cfg.circuit_threshold || 3;
+  } catch (e) {
+    showToast('加载代理状态失败: ' + e.message, 'error');
+  }
+}
+
+async function toggleProxy() {
+  const newState = proxyStatus ? !proxyStatus.enabled : true;
+  try {
+    const res = await api('proxy/toggle', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ enabled: newState }),
+    });
+    if (res.success) { showToast(res.message); await loadProxyPanel(); }
+  } catch (e) { showToast('切换代理失败: ' + e.message, 'error'); }
+}
+
+async function saveProxyConfig() {
+  try {
+    const res = await api('proxy/config', {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        timeout: parseInt($('cfgTimeout').value),
+        max_providers: parseInt($('cfgMaxProviders').value),
+        circuit_threshold: parseInt($('cfgCircuit').value),
+      }),
+    });
+    if (res.success) showToast(res.message);
+  } catch (e) { showToast('保存配置失败: ' + e.message, 'error'); }
+}
+
+// ---- Health ----
+let healthStatus = {};
+let healthPollTimer = null;
+
+async function loadHealthPanel() {
+  try {
+    const res = await fetch('/api/health');
+    healthStatus = await res.json();
+    renderHealthCards();
+    loadLatencyChart();
+    if (!healthPollTimer) { healthPollTimer = setInterval(loadHealthPanel, 60000); }
+  } catch (e) { showToast('加载健康状态失败: ' + e.message, 'error'); }
+}
+
+function renderHealthCards() {
+  const providersRes = providersRes_cache;
+  if (!providersRes) return;
+  $('healthGrid').innerHTML = Object.entries(healthStatus).map(([name, info]) => {
+    const p = (providersRes.providers || []).find(x => x.id === name);
+    return `
+    <div class="health-card">
+      <div class="health-card-header">
+        <span class="health-dot ${info.status}"></span>
+        <span class="health-card-name">${escapeHtml(p ? p.label : name)}</span>
+        <span class="health-card-latency">${info.latency_ms != null ? info.latency_ms + 'ms' : '-'}</span>
+        <button class="btn-check" onclick="checkSingleHealth('${escapeHtml(name)}')">检测</button>
+      </div>
+      ${(info.models || []).length ? `<div class="health-models">${info.models.map(m => `<span class="health-model-tag">${escapeHtml(m)}</span>`).join('')}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+async function checkSingleHealth(name) {
+  try { await fetch(`/api/health/check/${name}`, { method: 'POST' }); await loadHealthPanel(); }
+  catch (e) { showToast('检测失败: ' + e.message, 'error'); }
+}
+
+async function checkAllHealth() {
+  try {
+    const names = Object.keys(healthStatus);
+    await Promise.all(names.map(n => fetch(`/api/health/check/${n}`, { method: 'POST' }).catch(() => {})));
+    await loadHealthPanel();
+  } catch (e) { showToast('检测失败: ' + e.message, 'error'); }
+}
+
+// ---- Latency Chart ----
+async function loadLatencyChart() {
+  try {
+    const res = await fetch('/api/health/history');
+    const data = await res.json();
+    const history = data.history || [];
+    if (!history.length) {
+      $('latencyChart').innerHTML = '<div style="color:var(--text-secondary);text-align:center;padding:40px 0">暂无检测数据</div>';
+      return;
+    }
+    const providersRes = providersRes_cache;
+    const meta = {};
+    (providersRes?.providers || []).forEach(p => { meta[p.id] = p; });
+    const byProvider = {};
+    history.forEach(h => { if (h.latency_ms != null) { (byProvider[h.provider] = byProvider[h.provider] || []).push(h); } });
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(svgNS, 'svg');
+    svg.setAttribute('class', 'latency-chart-svg');
+    svg.setAttribute('viewBox', '0 0 800 140');
+    svg.setAttribute('preserveAspectRatio', 'none');
+    [0, 1, 2].forEach(i => {
+      const y = 10 + i * 42;
+      const line = document.createElementNS(svgNS, 'line');
+      line.setAttribute('class', 'axis-line');
+      line.setAttribute('x1', '0'); line.setAttribute('y1', String(y));
+      line.setAttribute('x2', '800'); line.setAttribute('y2', String(y));
+      svg.appendChild(line);
+    });
+    ['0ms', '1000ms', '2000ms'].forEach((txt, i) => {
+      const text = document.createElementNS(svgNS, 'text');
+      text.setAttribute('class', 'label-text');
+      text.setAttribute('x', '2'); text.setAttribute('y', String(8 + i * 42));
+      text.textContent = txt;
+      svg.appendChild(text);
+    });
+    const providerNames = Object.keys(byProvider);
+    const groupWidth = Math.max(4, Math.min(12, 700 / providerNames.length));
+    const maxPoints = Math.floor(700 / (groupWidth * providerNames.length));
+    providerNames.forEach((name, pi) => {
+      const entries = byProvider[name].slice(-maxPoints);
+      const color = meta[name]?.color || '#888';
+      entries.forEach((entry, ei) => {
+        const x = 50 + ei * (groupWidth * providerNames.length) + pi * groupWidth;
+        const barHeight = Math.min(120, Math.max(2, (entry.latency_ms / 3000) * 120));
+        const rect = document.createElementNS(svgNS, 'rect');
+        rect.setAttribute('class', 'bar');
+        rect.setAttribute('x', String(x)); rect.setAttribute('y', String(130 - barHeight));
+        rect.setAttribute('width', String(groupWidth - 1)); rect.setAttribute('height', String(barHeight));
+        rect.setAttribute('fill', color); rect.setAttribute('opacity', '0.7');
+        rect.setAttribute('title', `${name}: ${entry.latency_ms}ms`);
+        svg.appendChild(rect);
+      });
+    });
+    $('latencyChart').innerHTML = '';
+    $('latencyChart').appendChild(svg);
+    const legend = document.createElement('div');
+    legend.className = 'latency-chart-legend';
+    providerNames.forEach(name => {
+      const color = meta[name]?.color || '#888';
+      legend.innerHTML += `<span><span class="legend-dot" style="background:${color}"></span>${escapeHtml(meta[name]?.label || name)}</span>`;
+    });
+    $('latencyChart').appendChild(legend);
+  } catch (e) { $('latencyChart').innerHTML = '<div style="color:var(--text-secondary)">加载延迟趋势失败</div>'; }
 }
 
 // ESC to close modal
