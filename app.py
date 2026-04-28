@@ -1,9 +1,12 @@
-"""Claude Code 模型供应商切换 Web UI"""
+"""Claude Code 模型供应商切换 Web UI — CC Switch Lite"""
 
 import argparse
 
+from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask, jsonify, render_template, request
 
+from config import HEALTH_CHECK_INTERVAL
+from health import health_bp, run_health_check
 from provider_manager import (
     add_provider,
     delete_provider,
@@ -15,8 +18,11 @@ from provider_manager import (
     switch_provider,
     update_provider,
 )
+from proxy import proxy_bp, _init_proxy
 
 app = Flask(__name__)
+app.register_blueprint(health_bp)
+app.register_blueprint(proxy_bp)
 
 
 @app.route("/")
@@ -102,11 +108,18 @@ def api_history():
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Claude Code Provider Switcher")
+    parser = argparse.ArgumentParser(description="CC Switch Lite")
     parser.add_argument("--host", default="127.0.0.1", help="监听地址")
     parser.add_argument("--port", type=int, default=5000, help="监听端口")
     parser.add_argument("--debug", action="store_true", help="调试模式")
     args = parser.parse_args()
 
-    print(f"启动 Claude Code 供应商切换工具: http://{args.host}:{args.port}")
-    app.run(host=args.host, port=args.port, debug=args.debug)
+    _init_proxy()
+    run_health_check()
+
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(run_health_check, "interval", seconds=HEALTH_CHECK_INTERVAL)
+    scheduler.start()
+
+    print(f"启动 CC Switch Lite: http://{args.host}:{args.port}")
+    app.run(host=args.host, port=args.port, debug=args.debug, threaded=True)
