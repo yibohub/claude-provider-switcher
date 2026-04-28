@@ -20,3 +20,5 @@ Thumbs.db
 # Provider env files (contain API tokens)
 providers/*.env
 !providers/example.env
+.playwright-mcp/
+data/
