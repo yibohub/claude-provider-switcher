@@ -16,5 +16,14 @@
     "auth_type": "x-api-key",
     "health_check_path": "/v1/models",
     "health_check_fallback": true
+  },
+  "DeepSeek": {
+    "label": "DeepSeek",
+    "color": "#4ad9bc",
+    "icon": "D",
+    "priority": 3,
+    "auth_type": "x-api-key",
+    "health_check_path": "/v1/models",
+    "health_check_fallback": true
   }
 }
