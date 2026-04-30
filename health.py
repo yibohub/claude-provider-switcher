@@ -101,15 +101,19 @@ def _check_single_provider(name: str, meta_entry: dict) -> dict:
 
 
 def run_health_check():
+    import time as _time
     global _health_log
+    t0 = _time.time()
     meta = _load_meta()
+    results = {}
+    for name in sorted(meta):
+        results[name] = _check_single_provider(name, meta[name])
     with _lock:
-        for name in sorted(meta):
-            result = _check_single_provider(name, meta[name])
-            _provider_status[name] = result
-        _health_log = _load_health_log() + list(_provider_status.values())
+        _provider_status.update(results)
+        _health_log = _load_health_log() + list(results.values())
         _health_log = _purge_old_logs(_health_log)
         _save_health_log(_health_log)
+    print(f"[health] run_health_check → {len(results)} providers, {_time.time()-t0:.3f}s")
 
 
 def get_provider_status(name: str) -> dict:
@@ -119,6 +123,8 @@ def get_provider_status(name: str) -> dict:
 
 @health_bp.route("/api/health")
 def api_health():
+    import time as _time
+    t0 = _time.time()
     with _lock:
         result = {name: {
             "status": info.get("status", "unknown"),
@@ -126,13 +132,17 @@ def api_health():
             "models": info.get("models", []),
             "last_check": info.get("timestamp"),
         } for name, info in _provider_status.items()}
+    print(f"[health] GET /api/health → {len(result)} providers, {_time.time()-t0:.3f}s")
     return jsonify(result)
 
 
 @health_bp.route("/api/health/check/<name>", methods=["POST"])
 def api_health_check(name):
+    import time as _time
+    t0 = _time.time()
     meta = _load_meta()
     if name not in meta:
+        print(f"[health] POST /api/health/check/{name} → 404 not found")
         return jsonify({"success": False, "message": f"供应商 '{name}' 不存在"}), 404
     result = _check_single_provider(name, meta[name])
     with _lock:
@@ -140,11 +150,15 @@ def api_health_check(name):
         _health_log = _load_health_log() + [result]
         _health_log = _purge_old_logs(_health_log)
         _save_health_log(_health_log)
+    print(f"[health] POST /api/health/check/{name} → {result['status']}, {_time.time()-t0:.3f}s")
     return jsonify({"success": True, "provider": result})
 
 
 @health_bp.route("/api/health/history")
 def api_health_history():
+    import time as _time
+    t0 = _time.time()
     with _lock:
         log = _health_log if _health_log else _load_health_log()
+    print(f"[health] GET /api/health/history → {len(log)} entries, {_time.time()-t0:.3f}s")
     return jsonify({"history": log})

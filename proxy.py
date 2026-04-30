@@ -2,6 +2,7 @@
 
 import json
 import os
+import shutil
 import threading
 from collections import deque
 from datetime import datetime, timezone
@@ -239,8 +240,18 @@ def api_proxy_status():
             "last_failure_time": s.get("last_failure_time"),
         } for name, s in _circuit_state.items()}
         logs = list(_failover_log)
-    from provider_manager import get_current_provider
-    current = get_current_provider()
+    if _proxy_enabled:
+        from provider_manager import _load_meta, _provider_summary
+        meta = _load_meta()
+        providers = _get_current_provider_first()
+        if providers:
+            name = providers[0][0]
+            current = _provider_summary(name, meta[name])
+        else:
+            current = {"id": "unknown", "label": "未知", "color": "#888", "icon": "?"}
+    else:
+        from provider_manager import get_current_provider
+        current = get_current_provider()
     return jsonify({
         "enabled": _proxy_enabled,
         "current_provider": current,
@@ -249,11 +260,54 @@ def api_proxy_status():
     })
 
 
+PROXY_URL = "http://localhost:5000/proxy"
+
+
+def _switch_claude_base_url(to_proxy: bool):
+    """启用代理时自动切换 BASE_URL，关闭时恢复原值"""
+    from provider_manager import SETTINGS_FILE
+
+    settings_path = SETTINGS_FILE
+    if not settings_path.exists():
+        return False
+    try:
+        with open(settings_path, "r", encoding="utf-8") as f:
+            settings = json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return False
+
+    env = settings.setdefault("env", {})
+
+    if to_proxy:
+        current_url = env.get("ANTHROPIC_BASE_URL", "")
+        if current_url and current_url != PROXY_URL:
+            env["_original_base_url"] = current_url
+        elif "_original_base_url" not in env:
+            env["_original_base_url"] = ""
+        env["ANTHROPIC_BASE_URL"] = PROXY_URL
+    else:
+        original = env.pop("_original_base_url", None)
+        if original:
+            env["ANTHROPIC_BASE_URL"] = original
+
+    with open(settings_path, "w", encoding="utf-8") as f:
+        json.dump(settings, f, indent=2, ensure_ascii=False)
+        f.write("\n")
+    return True
+
+
 @proxy_bp.route("/api/proxy/toggle", methods=["POST"])
 def api_proxy_toggle():
     global _proxy_enabled
     data = request.get_json() or {}
-    _proxy_enabled = bool(data.get("enabled", not _proxy_enabled))
+    new_state = bool(data.get("enabled", not _proxy_enabled))
+
+    if new_state and not _proxy_enabled:
+        _switch_claude_base_url(to_proxy=True)
+    elif not new_state and _proxy_enabled:
+        _switch_claude_base_url(to_proxy=False)
+
+    _proxy_enabled = new_state
     _save_proxy_state(_proxy_enabled)
     return jsonify({"success": True, "enabled": _proxy_enabled, "message": f"代理已{'启用' if _proxy_enabled else '禁用'}"})
 

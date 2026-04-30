@@ -597,8 +597,24 @@ let currentId = '';
 let editingId = null; // null = adding, string = editing
 let providersRes_cache = null;
 
+async function safeFetch(url, opts) {
+  try {
+    const res = await fetch(url, opts);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res;
+  } catch (e) {
+    if (e.message.includes('Failed to fetch') || e.message.includes('ERR_CONNECTION')) {
+      await new Promise(r => setTimeout(r, 1000));
+      const res = await fetch(url, opts);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res;
+    }
+    throw e;
+  }
+}
+
 async function api(path, opts) {
-  const res = await fetch('/api/' + path, opts);
+  const res = await safeFetch('/api/' + path, opts);
   return res.json();
 }
 
@@ -853,7 +869,7 @@ async function refresh() {
     renderProviders(providersRes.providers, currentId);
     renderSettings(statusRes.settings);
     renderHistory(historyRes.history);
-    fetch('/api/health').then(r => r.json()).then(d => {
+    safeFetch('/api/health').then(r => r.json()).then(d => {
       healthStatus = d;
       renderProviders(providersRes.providers, currentId);
     }).catch(() => {});
@@ -904,12 +920,12 @@ async function loadProxyPanel() {
         </div>
       `).join('')
       : '<div class="info-item" style="color:var(--text-secondary)">暂无故障转移记录</div>';
-    const cfg = await (await fetch('/api/proxy/config')).json();
+    const cfg = await (await safeFetch('/api/proxy/config')).json();
     $('cfgTimeout').value = cfg.timeout || 30;
     $('cfgMaxProviders').value = cfg.max_providers || 3;
     $('cfgCircuit').value = cfg.circuit_threshold || 3;
   } catch (e) {
-    showToast('加载代理状态失败: ' + e.message, 'error');
+    if (!e.message.includes('Failed to fetch')) showToast('加载代理状态失败: ' + e.message, 'error');
   }
 }
 
@@ -944,14 +960,23 @@ async function saveProxyConfig() {
 let healthStatus = {};
 let healthPollTimer = null;
 
-async function loadHealthPanel() {
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && healthPollTimer) loadHealthPanel({ silent: true });
+});
+
+async function loadHealthPanel(opts = {}) {
+  const { silent = false, retry = false } = opts;
   try {
-    const res = await fetch('/api/health');
+    const res = await safeFetch('/api/health');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     healthStatus = await res.json();
     renderHealthCards();
     loadLatencyChart();
-    if (!healthPollTimer) { healthPollTimer = setInterval(loadHealthPanel, 60000); }
-  } catch (e) { showToast('加载健康状态失败: ' + e.message, 'error'); }
+    if (!healthPollTimer) { healthPollTimer = setInterval(() => loadHealthPanel({ silent: true }), 60000); }
+  } catch (e) {
+    if (!retry) { setTimeout(() => loadHealthPanel({ ...opts, retry: true }), 3000); return; }
+    if (!silent) showToast('服务器连接失败，请检查服务是否运行', 'error', 5000);
+  }
 }
 
 function renderHealthCards() {
@@ -988,7 +1013,7 @@ async function checkAllHealth() {
 // ---- Latency Chart ----
 async function loadLatencyChart() {
   try {
-    const res = await fetch('/api/health/history');
+    const res = await safeFetch('/api/health/history');
     const data = await res.json();
     const history = data.history || [];
     if (!history.length) {

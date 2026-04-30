@@ -1,6 +1,9 @@
 """Claude Code 模型供应商切换 Web UI — CC Switch Lite"""
 
 import argparse
+import signal
+import sys
+import traceback
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask, jsonify, render_template, request
@@ -25,9 +28,22 @@ app.register_blueprint(health_bp)
 app.register_blueprint(proxy_bp)
 
 
+def _handle_exception(exc_type, exc_value, exc_tb):
+    msg = "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
+    print(f"[FATAL] Uncaught exception:\n{msg}", file=sys.stderr, flush=True)
+
+
+sys.excepthook = _handle_exception
+
+
 @app.route("/")
 def index():
     return render_template("index.html")
+
+
+@app.route("/favicon.ico")
+def favicon():
+    return "", 204
 
 
 @app.route("/api/status")
@@ -121,5 +137,10 @@ if __name__ == "__main__":
     scheduler.add_job(run_health_check, "interval", seconds=HEALTH_CHECK_INTERVAL)
     scheduler.start()
 
-    print(f"启动 CC Switch Lite: http://{args.host}:{args.port}")
-    app.run(host=args.host, port=args.port, debug=args.debug, threaded=True)
+    print(f"启动 CC Switch Lite: http://{args.host}:{args.port}", flush=True)
+
+    if args.debug:
+        app.run(host=args.host, port=args.port, debug=True, threaded=True)
+    else:
+        import waitress
+        waitress.serve(app, host=args.host, port=args.port, threads=8)
