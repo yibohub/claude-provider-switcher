@@ -579,6 +579,20 @@
         <label>Sonnet 模型</label>
         <input type="text" id="fSonnet" placeholder="模型标识">
       </div>
+      <div class="form-group">
+        <label>主模型 (ANTHROPIC_MODEL)</label>
+        <input type="text" id="fMainModel" placeholder="如 deepseek-v4-pro（留空则不设置）">
+      </div>
+      <div class="form-group">
+        <label>子代理模型</label>
+        <input type="text" id="fSubagentModel" placeholder="如 deepseek-v4-flash（留空则不设置）">
+      </div>
+      <div class="form-group" style="display:flex;align-items:center;gap:10px">
+        <label class="toggle-switch" id="fEffortToggle" onclick="this.classList.toggle('on')">
+          <span></span>
+        </label>
+        <span>启用最大推理深度 (EFFORT_LEVEL=max)</span>
+      </div>
 
       <div class="form-actions">
         <button type="button" class="btn btn-cancel" onclick="closeModal()">取消</button>
@@ -657,6 +671,8 @@ function renderProviders(providers, currentId) {
         <div class="model-tag">H: <span>${escapeHtml(p.models.haiku)}</span></div>
         <div class="model-tag">O: <span>${escapeHtml(p.models.opus)}</span></div>
         <div class="model-tag">S: <span>${escapeHtml(p.models.sonnet)}</span></div>
+        ${p.models.main ? `<div class="model-tag">M: <span>${escapeHtml(p.models.main)}</span></div>` : ''}
+        ${p.models.subagent ? `<div class="model-tag">SA: <span>${escapeHtml(p.models.subagent)}</span></div>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -735,6 +751,7 @@ async function doSwitch(name) {
 // ---- Modal ----
 
 function openAddModal() {
+  if ($('modalOverlay').classList.contains('show')) return;
   editingId = null;
   $('modalTitle').textContent = '添加供应商';
   $('fName').value = '';
@@ -749,6 +766,9 @@ function openAddModal() {
   $('fHaiku').value = '';
   $('fOpus').value = '';
   $('fSonnet').value = '';
+  $('fMainModel').value = '';
+  $('fSubagentModel').value = '';
+  $('fEffortToggle').classList.remove('on');
   $('modalOverlay').classList.add('show');
   $('fName').focus();
 }
@@ -774,6 +794,9 @@ async function openEditModal(name) {
     $('fHaiku').value = p.env.ANTHROPIC_DEFAULT_HAIKU_MODEL || '';
     $('fOpus').value = p.env.ANTHROPIC_DEFAULT_OPUS_MODEL || '';
     $('fSonnet').value = p.env.ANTHROPIC_DEFAULT_SONNET_MODEL || '';
+    $('fMainModel').value = p.env.ANTHROPIC_MODEL || '';
+    $('fSubagentModel').value = p.env.CLAUDE_CODE_SUBAGENT_MODEL || '';
+    p.env.CLAUDE_CODE_EFFORT_LEVEL ? $('fEffortToggle').classList.add('on') : $('fEffortToggle').classList.remove('on');
     $('fPriority').value = p.priority || 99;
     $('fAuthType').value = p.auth_type || 'x-api-key';
     $('modalOverlay').classList.add('show');
@@ -800,6 +823,9 @@ async function submitForm() {
     ANTHROPIC_DEFAULT_HAIKU_MODEL: $('fHaiku').value.trim(),
     ANTHROPIC_DEFAULT_OPUS_MODEL: $('fOpus').value.trim(),
     ANTHROPIC_DEFAULT_SONNET_MODEL: $('fSonnet').value.trim(),
+    ANTHROPIC_MODEL: $('fMainModel').value.trim(),
+    CLAUDE_CODE_SUBAGENT_MODEL: $('fSubagentModel').value.trim(),
+    CLAUDE_CODE_EFFORT_LEVEL: $('fEffortToggle').classList.contains('on') ? 'max' : '',
   };
   const priority = parseInt($('fPriority').value) || 99;
   const auth_type = $('fAuthType').value;

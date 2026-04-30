@@ -19,6 +19,9 @@ SWITCHABLE_ENV_KEYS = [
     "ANTHROPIC_DEFAULT_HAIKU_MODEL",
     "ANTHROPIC_DEFAULT_OPUS_MODEL",
     "ANTHROPIC_DEFAULT_SONNET_MODEL",
+    "ANTHROPIC_MODEL",
+    "CLAUDE_CODE_SUBAGENT_MODEL",
+    "CLAUDE_CODE_EFFORT_LEVEL",
 ]
 
 # 内置默认元数据（首次运行迁移用）
@@ -120,6 +123,8 @@ def _extract_models(env: dict) -> dict:
         "haiku": env.get("ANTHROPIC_DEFAULT_HAIKU_MODEL", ""),
         "opus": env.get("ANTHROPIC_DEFAULT_OPUS_MODEL", ""),
         "sonnet": env.get("ANTHROPIC_DEFAULT_SONNET_MODEL", ""),
+        "main": env.get("ANTHROPIC_MODEL", ""),
+        "subagent": env.get("CLAUDE_CODE_SUBAGENT_MODEL", ""),
     }
 
 
