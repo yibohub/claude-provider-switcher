@@ -223,6 +223,8 @@ def switch_provider(name: str) -> dict:
     for key in SWITCHABLE_ENV_KEYS:
         if key in env_values:
             settings["env"][key] = env_values[key]
+        elif key in settings["env"]:
+            del settings["env"][key]
 
     _save_settings(settings)
     return {"success": True, "message": f"已切换到 {meta[name]['label']}", "backup": backup_path}
