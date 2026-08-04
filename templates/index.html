@@ -593,6 +593,16 @@
         </label>
         <span>启用最大推理深度 (EFFORT_LEVEL=max)</span>
       </div>
+      <div class="form-group">
+        <label>上下文窗口 (AUTO_COMPACT_WINDOW)</label>
+        <input type="number" id="fCompactWindow" list="fCompactWindowOpts" placeholder="留空=不设置" min="0" step="1000">
+        <datalist id="fCompactWindowOpts">
+          <option value="204800" label="200K"></option>
+          <option value="256000" label="256K"></option>
+          <option value="512000" label="512K"></option>
+          <option value="1024000" label="1M"></option>
+        </datalist>
+      </div>
 
       <div class="form-actions">
         <button type="button" class="btn btn-cancel" onclick="closeModal()">取消</button>
@@ -769,6 +779,7 @@ function openAddModal() {
   $('fMainModel').value = '';
   $('fSubagentModel').value = '';
   $('fEffortToggle').classList.remove('on');
+  $('fCompactWindow').value = '';
   $('modalOverlay').classList.add('show');
   $('fName').focus();
 }
@@ -797,6 +808,7 @@ async function openEditModal(name) {
     $('fMainModel').value = p.env.ANTHROPIC_MODEL || '';
     $('fSubagentModel').value = p.env.CLAUDE_CODE_SUBAGENT_MODEL || '';
     p.env.CLAUDE_CODE_EFFORT_LEVEL ? $('fEffortToggle').classList.add('on') : $('fEffortToggle').classList.remove('on');
+    $('fCompactWindow').value = p.env.CLAUDE_CODE_AUTO_COMPACT_WINDOW || '';
     $('fPriority').value = p.priority || 99;
     $('fAuthType').value = p.auth_type || 'x-api-key';
     $('modalOverlay').classList.add('show');
@@ -826,7 +838,12 @@ async function submitForm() {
     ANTHROPIC_MODEL: $('fMainModel').value.trim(),
     CLAUDE_CODE_SUBAGENT_MODEL: $('fSubagentModel').value.trim(),
     CLAUDE_CODE_EFFORT_LEVEL: $('fEffortToggle').classList.contains('on') ? 'max' : '',
+    CLAUDE_CODE_AUTO_COMPACT_WINDOW: $('fCompactWindow').value.trim(),
   };
+  // 剔除空值：留空 = 不设置该环境变量
+  for (const k in env) {
+    if (env[k] === '') delete env[k];
+  }
   const priority = parseInt($('fPriority').value) || 99;
   const auth_type = $('fAuthType').value;
 

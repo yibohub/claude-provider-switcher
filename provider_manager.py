@@ -22,6 +22,7 @@ SWITCHABLE_ENV_KEYS = [
     "ANTHROPIC_MODEL",
     "CLAUDE_CODE_SUBAGENT_MODEL",
     "CLAUDE_CODE_EFFORT_LEVEL",
+    "CLAUDE_CODE_AUTO_COMPACT_WINDOW",
 ]
 
 # 内置默认元数据（首次运行迁移用）
@@ -31,7 +32,7 @@ _BUILTIN_META = {
         "priority": 1, "auth_type": "x-api-key",
         "health_check_path": "/v1/models", "health_check_fallback": True,
     },
-    "m27": {
+    "minimax": {
         "label": "MiniMax", "color": "#E67E22", "icon": "M",
         "priority": 2, "auth_type": "x-api-key",
         "health_check_path": "/v1/models", "health_check_fallback": True,
@@ -70,11 +71,12 @@ def _load_env_file(env_path: Path) -> dict:
 
 
 def _save_env_file(env_path: Path, env: dict) -> None:
-    """写入 .env 文件"""
+    """写入 .env 文件（仅保留有值的键，空值视为不设置）"""
     with open(env_path, "w") as f:
         for key in SWITCHABLE_ENV_KEYS:
-            if key in env:
-                f.write(f"{key}={env[key]}\n")
+            value = env.get(key, "").strip()
+            if value:
+                f.write(f"{key}={value}\n")
 
 
 def _load_settings() -> dict:
@@ -125,6 +127,7 @@ def _extract_models(env: dict) -> dict:
         "sonnet": env.get("ANTHROPIC_DEFAULT_SONNET_MODEL", ""),
         "main": env.get("ANTHROPIC_MODEL", ""),
         "subagent": env.get("CLAUDE_CODE_SUBAGENT_MODEL", ""),
+        "compact_window": env.get("CLAUDE_CODE_AUTO_COMPACT_WINDOW", ""),
     }
 
 
@@ -221,8 +224,9 @@ def switch_provider(name: str) -> dict:
     settings = _load_settings()
 
     for key in SWITCHABLE_ENV_KEYS:
-        if key in env_values:
-            settings["env"][key] = env_values[key]
+        value = env_values.get(key, "").strip()
+        if value:
+            settings["env"][key] = value
         elif key in settings["env"]:
             del settings["env"][key]
 
