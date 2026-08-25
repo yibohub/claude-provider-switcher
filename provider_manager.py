@@ -131,23 +131,46 @@ def _extract_models(env: dict) -> dict:
     }
 
 
-def _build_url_to_provider(meta: dict) -> dict:
-    """构建 base_url -> provider_name 的查找表"""
-    mapping = {}
+def _env_fingerprint(env: dict) -> frozenset:
+    """提取受管 env 键上的非空键值指纹，用于精确匹配供应商"""
+    return frozenset((k, env[k]) for k in SWITCHABLE_ENV_KEYS if env.get(k, "").strip())
+
+
+def _match_provider(env: dict, meta: dict) -> str:
+    """根据 settings 的 env 匹配供应商 id。
+
+    先按 base_url 过滤候选，再用受管 env 键指纹消歧。
+    同 base_url 的多个供应商（如 9Router / opencode-zen / Openrouter）
+    依赖指纹区分；无法区分时按优先级确定性回退。
+    """
+    base_url = (env.get("ANTHROPIC_BASE_URL") or "").strip()
+    if not base_url:
+        return ""
+
+    candidates = []
     for pname in meta:
-        env = _load_provider_env(pname)
-        url = env.get("ANTHROPIC_BASE_URL")
-        if url:
-            mapping[url] = pname
-    return mapping
+        penv = _load_provider_env(pname)
+        if (penv.get("ANTHROPIC_BASE_URL") or "").strip() == base_url:
+            candidates.append(pname)
+
+    if not candidates:
+        return ""
+    if len(candidates) == 1:
+        return candidates[0]
+
+    target = _env_fingerprint(env)
+    for pname in candidates:
+        if _env_fingerprint(_load_provider_env(pname)) == target:
+            return pname
+
+    candidates.sort(key=lambda p: (meta[p].get("priority", 99), p))
+    return candidates[0]
 
 def get_all_providers() -> dict:
     """返回 {providers: [...], current_id: str}"""
     meta = _load_meta()
     settings = _load_settings()
-    current_url = settings.get("env", {}).get("ANTHROPIC_BASE_URL", "")
-    url_map = _build_url_to_provider(meta)
-    current_id = url_map.get(current_url, "unknown")
+    current_id = _match_provider(settings.get("env", {}), meta) or "unknown"
 
     providers = []
     for name in sorted(meta):
@@ -163,14 +186,10 @@ def get_all_providers() -> dict:
 
 def get_current_provider() -> dict:
     settings = _load_settings()
-    base_url = settings.get("env", {}).get("ANTHROPIC_BASE_URL", "")
     meta = _load_meta()
-    url_map = _build_url_to_provider(meta)
-
-    name = url_map.get(base_url)
-    if name and name in meta:
-        result = _provider_summary(name, meta[name])
-        return result
+    name = _match_provider(settings.get("env", {}), meta)
+    if name:
+        return _provider_summary(name, meta[name])
 
     return {"id": "unknown", "label": "未知", "color": "#888", "icon": "?"}
 
@@ -308,15 +327,13 @@ def get_switch_history(limit: int = 10) -> list:
         return []
 
     meta = _load_meta()
-    url_map = _build_url_to_provider(meta)
     backups = sorted(BACKUP_DIR.glob("settings_*.json"), reverse=True)[:limit]
     history = []
     for bp in backups:
         try:
             with open(bp, "r") as f:
                 data = json.load(f)
-            base_url = data.get("env", {}).get("ANTHROPIC_BASE_URL", "")
-            provider = url_map.get(base_url, "unknown")
+            provider = _match_provider(data.get("env", {}), meta) or "unknown"
 
             timestamp_str = bp.stem.replace("settings_", "")
             pm = meta.get(provider, {})
