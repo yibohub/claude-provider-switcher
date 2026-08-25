@@ -125,7 +125,7 @@ def api_history():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="CC Switch Lite")
-    parser.add_argument("--host", default="127.0.0.1", help="监听地址")
+    parser.add_argument("--host", default="0.0.0.0", help="监听地址")
     parser.add_argument("--port", type=int, default=5000, help="监听端口")
     parser.add_argument("--debug", action="store_true", help="调试模式")
     args = parser.parse_args()

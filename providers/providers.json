@@ -8,9 +8,9 @@
     "health_check_path": "/v1/models",
     "health_check_fallback": true
   },
-  "m27": {
+  "minimax": {
     "label": "MiniMax",
-    "color": "#E67E22",
+    "color": "#e67e22",
     "icon": "M",
     "priority": 2,
     "auth_type": "x-api-key",
@@ -22,6 +22,69 @@
     "color": "#4ad9bc",
     "icon": "D",
     "priority": 3,
+    "auth_type": "x-api-key",
+    "health_check_path": "/v1/models",
+    "health_check_fallback": true
+  },
+  "9Router": {
+    "label": "opencode-deepseek",
+    "color": "#4a90d9",
+    "icon": "9",
+    "priority": 99,
+    "auth_type": "x-api-key",
+    "health_check_path": "/v1/models",
+    "health_check_fallback": true
+  },
+  "KIMI": {
+    "label": "KIMI",
+    "color": "#4a90d9",
+    "icon": "K",
+    "priority": 99,
+    "auth_type": "x-api-key",
+    "health_check_path": "/v1/models",
+    "health_check_fallback": true
+  },
+  "sensenova": {
+    "label": "sensenova",
+    "color": "#4a90d9",
+    "icon": "S",
+    "priority": 99,
+    "auth_type": "x-api-key",
+    "health_check_path": "/v1/models",
+    "health_check_fallback": true
+  },
+  "DS": {
+    "label": "DS",
+    "color": "#4a90d9",
+    "icon": "D",
+    "priority": 99,
+    "auth_type": "x-api-key",
+    "health_check_path": "/v1/models",
+    "health_check_fallback": true
+  },
+  "scnet": {
+    "label": "scnet",
+    "color": "#4a90d9",
+    "icon": "S",
+    "priority": 99,
+    "auth_type": "x-api-key",
+    "health_check_path": "/v1/models",
+    "health_check_fallback": true
+  },
+  "Openrouter": {
+    "label": "Openrouter",
+    "color": "#4a90d9",
+    "icon": "O",
+    "priority": 99,
+    "auth_type": "x-api-key",
+    "health_check_path": "/v1/models",
+    "health_check_fallback": true
+  },
+  "opencode-zen": {
+    "label": "opencode-zen",
+    "color": "#4a90d9",
+    "icon": "O",
+    "priority": 99,
     "auth_type": "x-api-key",
     "health_check_path": "/v1/models",
     "health_check_fallback": true

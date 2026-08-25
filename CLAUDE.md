@@ -65,3 +65,64 @@ providers/              # 运行时数据（providers.json 元数据 + 每个供
 - Python：公开函数使用类型注解，返回字典中的消息使用中文
 - API：所有端点返回 `{"success": bool, "message": str}` 格式；`app.py` 仅负责路由，所有逻辑在 `provider_manager.py` 中
 - 无 ORM、无数据库 — 全部基于文件（JSON + .env）
+
+---
+
+# 编码行为准则
+
+Derived from [Andrej Karpathy's observations](https://x.com/karpathy/status/2015883857489522876) on LLM coding pitfalls.
+
+## 1. Think Before Coding
+
+Don't assume. Don't hide confusion. Surface tradeoffs.
+
+- State assumptions explicitly — If uncertain, ask rather than guess
+- Present multiple interpretations — Don't pick silently when ambiguity exists
+- Push back when warranted — If a simpler approach exists, say so
+- Stop when confused — Name what's unclear and ask for clarification
+
+## 2. Simplicity First
+
+Minimum code that solves the problem. Nothing speculative.
+
+- No features beyond what was asked
+- No abstractions for single-use code
+- No "flexibility" or "configurability" that wasn't requested
+- No error handling for impossible scenarios
+- If 200 lines could be 50, rewrite it
+
+The test: Would a senior engineer say this is overcomplicated? If yes, simplify.
+
+## 3. Surgical Changes
+
+Touch only what you must. Clean up only your own mess.
+
+When editing existing code:
+
+- Don't "improve" adjacent code, comments, or formatting
+- Don't refactor things that aren't broken
+- Match existing style, even if you'd do it differently
+- If you notice unrelated dead code, mention it — don't delete it
+
+When your changes create orphans:
+
+- Remove imports/variables/functions that YOUR changes made unused
+- Don't remove pre-existing dead code unless asked
+
+The test: Every changed line should trace directly to the user's request.
+
+## 4. Goal-Driven Execution
+
+Define success criteria. Loop until verified.
+
+| Instead of... | Transform to... |
+|---|---|
+| "Add validation" | "Write tests for invalid inputs, then make them pass" |
+| "Fix the bug" | "Write a test that reproduces it, then make it pass" |
+| "Refactor X" | "Ensure tests pass before and after" |
+
+For multi-step tasks, state a brief plan:
+
+1. [Step] → verify: [check]
+2. [Step] → verify: [check]
+3. [Step] → verify: [check]
