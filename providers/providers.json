@@ -72,7 +72,7 @@
     "health_check_fallback": true
   },
   "Openrouter": {
-    "label": "Openrouter",
+    "label": "commandcode",
     "color": "#4a90d9",
     "icon": "O",
     "priority": 99,
